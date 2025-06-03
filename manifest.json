@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "ChatGPT Injector",
+  "version": "1.0",
+  "description": "Inject script manually into ChatGPT via action button",
+  "permissions": ["scripting", "activeTab"],
+  "host_permissions": ["https://chat.openai.com/*"],
+  "action": {
+    "default_title": "Inject Script"
+  },
+  "background": {
+    "service_worker": "content.js"
+  }
+}
