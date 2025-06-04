@@ -2,58 +2,50 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 300px;
   height: 100vh;
-  background-color: #000000;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
-  transition: width 0.3s ease;
-  z-index: 10000;
+  width: 300px;
+  background: var(--chat-background, #343541);
+  border-left: 1px solid #4a4a4a;
+  padding: 10px;
   overflow-y: auto;
-  padding: 1em;
-  font-family: sans-serif;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
-}
-
-#my-chatgpt-panel h3 {
-  margin-top: 0;
-  font-size: 18px;
+  color: white;
+  font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
 }
 
 #my-chatgpt-toggle-btn {
   position: fixed;
   bottom: 20px;
-  right: 20px;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
+  right: 30px;
+  z-index: 10000;
+  padding: 6px 12px;
+  font-size: 20px;
+  cursor: pointer;
+  background: #565869;
+  color: white;
   border: none;
-  background-color: #ffffff;
-  color: #181818;
-  font-size: 24px;
-  cursor: pointer;
-  z-index: 10001;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
-
-#prompt-list li {
-  cursor: pointer;
-  margin-bottom: 0.5em;
-  padding: 0.3em;
-  border-bottom: 1px solid #ddd;
-}
-
-#prompt-list li:hover {
-  background: #ffffff0d;
+  border-radius: 4px;
 }
 
 #resizer {
+  width: 5px;
+  height: 100%;
   position: absolute;
   left: 0;
   top: 0;
-  width: 6px;
-  height: 100%;
   cursor: ew-resize;
-  background-color: transparent;
-  z-index: 10001;
+  background: #4a4a4a;
+}
+
+#prompt-list li {
+  margin-bottom: 8px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+#prompt-list li:hover {
+  background-color: #40414f;
 }
