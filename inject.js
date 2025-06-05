@@ -3,23 +3,6 @@ if (document.getElementById("my-chatgpt-panel")) {
 } else {
   console.log("✅ Injecting panel...");
 
-  const extractKeywords = (text) => {
-  const stopWords = new Set([
-    "i", "me", "my", "myself", "we", "our", "you", "your", "yours",
-    "he", "she", "it", "they", "them", "this", "that", "am", "is", "are", "was", "were",
-    "be", "been", "being", "have", "has", "had", "do", "does", "did",
-    "a", "an", "the", "and", "but", "or", "if", "then", "because", "so", "to", "of", "in", "on", "for", "with", "as", "by", "at"
-  ]);
-
-  return text
-    .toLowerCase()
-    .split(/\W+/)                      // Split on words
-    .filter(word => word.length > 2 && !stopWords.has(word))
-    .slice(0, 5)                       // Limit to top 5
-    .join(", ");
-};
-
-
   // Inject stylesheet
   const styleLink = document.createElement("link");
   styleLink.rel = "stylesheet";
@@ -31,9 +14,10 @@ if (document.getElementById("my-chatgpt-panel")) {
   panel.id = "my-chatgpt-panel";
   panel.innerHTML = `
     <div id="resizer"></div>
-    <h3 style="margin-bottom: 10px;">Prompt Index</h3>
+    <h3 style="margin-bottom: 10px; text-align: center">Prompt Index</h3>
     <ul id="prompt-list"></ul>
   `;
+  let windowWidth = 300;
   document.body.appendChild(panel);
 
   // Create Toggle Button
@@ -42,10 +26,10 @@ if (document.getElementById("my-chatgpt-panel")) {
   toggleButton.innerText = "☰";
   document.body.appendChild(toggleButton);
 
-  let panelVisible = true;
+  let panelVisible = false;
   toggleButton.onclick = () => {
     panelVisible = !panelVisible;
-    panel.style.display = panelVisible ? "flex" : "none";
+    panel.style.right = panelVisible ? `${0}px` : `-${windowWidth}px`;
   };
 
   // Resizing
@@ -58,7 +42,8 @@ if (document.getElementById("my-chatgpt-panel")) {
   document.addEventListener("mousemove", (e) => {
     if (!isResizing) return;
     const newWidth = window.innerWidth - e.clientX;
-    panel.style.width = `${Math.min(Math.max(newWidth, 200), 600)}px`;
+    windowWidth = Math.min(Math.max(newWidth, 300), 500)
+    panel.style.width = `${windowWidth}px`;
   });
   document.addEventListener("mouseup", () => {
     isResizing = false;
@@ -77,10 +62,7 @@ if (document.getElementById("my-chatgpt-panel")) {
     targetNode.id = anchorId;
 
     const listItem = document.createElement("li");
-	// keyword extraction
-	const keywords = extractKeywords(textContent);
-	listItem.innerText = keywords || (textContent.length > 50 ? textContent.slice(0, 50) + "…" : textContent);
-
+    listItem.innerText = textContent.length > 50 ? textContent.slice(0, 50) + "…" : textContent;
     listItem.title = textContent;
     listItem.onclick = () => {
       const target = document.getElementById(anchorId);
