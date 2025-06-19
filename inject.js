@@ -6,7 +6,7 @@ if (document.getElementById("my-chatgpt-panel")) {
     // Inject stylesheet
     const styleLink = document.createElement("link");
     styleLink.rel = "stylesheet";
-    styleLink.href = chrome.runtime.getURL("styles.css"); // Correct path for Chrome extensions
+    styleLink.href = chrome.runtime.getURL("styles.css");
     document.head.appendChild(styleLink);
 
     // Create Panel
@@ -41,7 +41,7 @@ if (document.getElementById("my-chatgpt-panel")) {
     // toggle button implementation logic
     let panelVisible = false;
     toggleButton.onclick = (event) => {
-        event.stopPropagation(); // Prevent this click from propagating to the document
+        event.stopPropagation();
         panelVisible = !panelVisible;
         if (panelVisible) {
             showPanel();
@@ -52,7 +52,6 @@ if (document.getElementById("my-chatgpt-panel")) {
 
     // Close panel when clicking outside
     document.addEventListener("click", (event) => {
-        // Check if the click occurred outside the panel and outside the toggle button
         if (panelVisible && !panel.contains(event.target) && !toggleButton.contains(event.target)) {
             hidePanel();
         }
@@ -68,9 +67,8 @@ if (document.getElementById("my-chatgpt-panel")) {
     document.addEventListener("mousemove", (e) => {
         if (!isResizing) return;
         const newWidth = window.innerWidth - e.clientX;
-        windowWidth = Math.min(Math.max(newWidth, 300), 500)
+        windowWidth = Math.min(Math.max(newWidth, 300), 500);
         panel.style.width = `${windowWidth}px`;
-        // If panel is visible, keep its right position updated during resize
         if (panelVisible) {
             panel.style.right = `${0}px`;
         }
@@ -80,7 +78,57 @@ if (document.getElementById("my-chatgpt-panel")) {
         document.body.style.cursor = "";
     });
 
-    // Prompt Index Logic
+    // --- Modal Logic ---
+    const showRenameModal = (listItem) => {
+        // Close any existing modal first
+        closeRenameModal();
+
+        const promptTextSpan = listItem.querySelector(".prompt-text");
+        const currentName = listItem.dataset.renamed === 'true'
+            ? listItem.dataset.renamedValue
+            : promptTextSpan.title; // original full text
+
+        const modal = document.createElement("div");
+        modal.id = "rename-modal";
+        modal.innerHTML = `
+        <div id="modal-content">
+            <h3>Rename Prompt</h3>
+            <input type="text" id="rename-input" value="${currentName.replace(/"/g, '&quot;')}">
+            <div id="modal-buttons">
+                <button id="rename-save-btn">Rename</button>
+                <button id="rename-cancel-btn">Cancel</button>
+            </div>
+        </div>
+        `;
+        document.body.appendChild(modal);
+
+        document.getElementById("rename-save-btn").onclick = () => {
+            const newName = document.getElementById("rename-input").value.trim();
+            if (newName) {
+                promptTextSpan.innerText = newName.length > 50 ? newName.slice(0, 50) + "…" : newName;
+                listItem.dataset.renamed = 'true';
+                listItem.dataset.renamedValue = newName;
+                closeRenameModal();
+            }
+        };
+
+        document.getElementById("rename-cancel-btn").onclick = closeRenameModal;
+        modal.onclick = (e) => { // Close on overlay click
+            if (e.target.id === 'rename-modal') {
+                closeRenameModal();
+            }
+        };
+    };
+
+    const closeRenameModal = () => {
+        const modal = document.getElementById("rename-modal");
+        if (modal) {
+            modal.remove();
+        }
+    };
+
+
+    // --- Prompt Index Logic ---
     let promptCounter = 0;
     const addedPrompts = new Set();
     const promptList = document.getElementById("prompt-list");
@@ -92,13 +140,55 @@ if (document.getElementById("my-chatgpt-panel")) {
         targetNode.id = anchorId;
 
         const listItem = document.createElement("li");
-        listItem.innerText = textContent.length > 50 ? textContent.slice(0, 50) + "…" : textContent;
-        listItem.title = textContent;
+        // Add custom attributes
+        listItem.dataset.renamed = "false";
+        listItem.dataset.renamedValue = "";
+        listItem.dataset.starred = "false";
+
+        // Main text span
+        const textSpan = document.createElement("span");
+        textSpan.className = "prompt-text";
+        textSpan.innerText = textContent.length > 50 ? textContent.slice(0, 50) + "…" : textContent;
+        textSpan.title = textContent; // Store full original text in title
+
+        // Buttons container
+        const buttonsDiv = document.createElement("div");
+        buttonsDiv.className = "prompt-buttons";
+
+        // Star button
+        const starBtn = document.createElement("button");
+        starBtn.className = "star-btn";
+        starBtn.innerHTML = '☆'; // Initial empty star
+        starBtn.title = "Star Prompt";
+        starBtn.onclick = (e) => {
+            e.stopPropagation();
+            const isStarred = listItem.dataset.starred === 'true';
+            listItem.dataset.starred = !isStarred;
+            starBtn.innerHTML = !isStarred ? '★' : '☆';
+            starBtn.classList.toggle('starred', !isStarred);
+        };
+
+        // Rename button
+        const renameBtn = document.createElement("button");
+        renameBtn.className = "edit-btn";
+        renameBtn.innerHTML = '📝'; // Notebook-pen icon
+        renameBtn.title = "Rename Prompt";
+        renameBtn.onclick = (e) => {
+            e.stopPropagation();
+            showRenameModal(listItem);
+        };
+        
+        buttonsDiv.appendChild(renameBtn);
+        buttonsDiv.appendChild(starBtn);
+        
+        listItem.appendChild(textSpan);
+        listItem.appendChild(buttonsDiv);
+        
         listItem.onclick = () => {
             const target = document.getElementById(anchorId);
             if (target) {
                 target.scrollIntoView({ behavior: "smooth", block: "start" });
-                hidePanel(); // Optionally hide panel after clicking a prompt
+                hidePanel();
             }
         };
 
@@ -130,7 +220,6 @@ if (document.getElementById("my-chatgpt-panel")) {
                 ) {
                     const userMessage = node.querySelector('div[data-message-author-role="user"]');
                     const textContent = userMessage?.innerText?.trim();
-                    // Ensure the added node is a direct parent or contains the user message
                     const targetNodeForPrompt = node.querySelector('div[data-message-author-role="user"]').closest("div");
                     if (targetNodeForPrompt) {
                         addPromptToPanel(textContent, targetNodeForPrompt);
