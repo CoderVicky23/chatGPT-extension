@@ -13,7 +13,7 @@
   border-left: 1px solid #2d2f33;
   z-index: 9999;
   overflow-y: auto;
-  padding: 10px;
+  padding: 20px; /* Increased padding */
   padding-bottom: 80px;
   transition: right .5s ease;
   box-sizing: border-box;
@@ -21,22 +21,27 @@
 
 #my-chatgpt-toggle-btn {
   position: fixed;
-  bottom: 10px;
+  bottom: 50px;
   right: 0px;
   background-color: #343541;
   color: white;
   border: none;
-  border-radius: 4px;
-  font-size: 20px;
-  padding: 6px 10px;
+  border-radius: 50% 0 0 50%;
+  font-size: 30px;
+  padding: 10px 10px;
   cursor: pointer;
   z-index: 10000;
 }
 
+#my-chatgpt-toggle-btn img {
+  width: 20px;
+  height: 20px;
+}
+
 #prompt-list li {
   background-color: #343541;
-  margin-bottom: 6px;
-  padding: 6px 8px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
   border-radius: 6px;
   display: flex;
   justify-content: space-between;
@@ -44,7 +49,7 @@
   transition: background 0.2s ease;
   cursor: pointer;
   gap: 5px;
-  min-height: 36px;
+  min-height: 44px; /* Increased height */
 }
 
 #prompt-list li:hover {
@@ -58,7 +63,7 @@
   text-overflow: ellipsis;
   background-color: transparent;
   border: none;
-  color: #ececf1;
+  color: inherit;
   font-size: 14px;
   cursor: pointer;
 }
@@ -80,7 +85,7 @@
   border: none;
   margin-left: 6px;
   cursor: pointer;
-  color: #ececf1;
+  color: inherit;
   padding: 2px;
   line-height: 1;
   display: flex;
@@ -103,6 +108,25 @@
   stroke: yellow;
 }
 
+/* === Title and Theme === */
+.theme-toggle {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: inherit;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+#chat-title {
+  font-style: italic;
+  font-size: 12px;
+  margin-top: 0;
+  margin-bottom: 12px;
+  text-align: center;
+  opacity: 0.8;
+}
+
 /* === Resizer === */
 #resizer {
   position: absolute;
@@ -113,5 +137,3 @@
   cursor: ew-resize;
   background-color: transparent;
 }
-
-/* === Modal - Removed for inline renaming === */

@@ -1,4 +1,4 @@
-// Enhanced inject.js with persistent storage, error handling, and synced scan-fetch-render
+
 (async () => {
   if (document.getElementById("my-chatgpt-panel")) {
     console.log("✅ Panel already exists");
@@ -12,36 +12,154 @@
   const CHAT_SCAN_DELAY = 1500;
 
   const style = document.createElement("style");
-  style.textContent = `.prompt-text:focus { outline: none !important; box-shadow: none !important; }`;
+  style.textContent = `
+    .prompt-text:focus { outline: none !important; box-shadow: none !important; }
+    .theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin-left: auto;
+      padding: 4px;
+    }
+    .theme-toggle svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+    }
+    #chat-title {
+      font-style: italic;
+      font-size: 12px;
+      margin-top: 0;
+      margin-bottom: 12px;
+      text-align: center;
+      opacity: 0.8;
+    }
+  `;
   document.head.appendChild(style);
 
-  // const styleLink = document.createElement("link");
-  // styleLink.rel = "stylesheet";
-  // styleLink.href = chrome.runtime.getURL("styles.css");
-  // styleLink.onload = () => console.log("Styles loaded.");
-  // document.head.appendChild(styleLink);
+  const getChatTitle = () => {
+    try {
+      // Attempt 1: From selected nav item
+      const navLinks = document.querySelectorAll('nav a');
+      for (const link of navLinks) {
+        if (link.getAttribute('aria-current') === 'page') {
+          const label = link.querySelector('span');
+          if (label && label.textContent.trim()) {
+            return label.textContent.trim();
+          }
+        }
+      }
+
+      // Attempt 2: Chat header inside main chat area
+      const mainHeading = document.querySelector('main h1');
+      if (mainHeading && mainHeading.textContent.trim()) {
+        return mainHeading.textContent.trim();
+      }
+
+      // Attempt 3: Document title parsing (fallback)
+      const titleParts = document.title.split('–');
+      if (titleParts.length > 0 && titleParts[0].trim().length > 0) {
+        return titleParts[0].trim();
+      }
+    } catch (e) {
+      console.warn("Error getting chat title:", e);
+    }
+    return "Unnamed Chat";
+  };
 
   const panel = document.createElement("div");
   panel.id = "my-chatgpt-panel";
-  panel.innerHTML = `<div id="resizer"></div><h3 style="margin-bottom: 10px; text-align: center">Prompt Index</h3><ul id="prompt-list"></ul>`;
+  const titleBar = document.createElement("div");
+  titleBar.style.display = "flex";
+  titleBar.style.justifyContent = "center";
+  titleBar.style.alignItems = "center";
+  titleBar.style.marginBottom = "6px";
+
+  const titleText = document.createElement("h3");
+  titleText.textContent = "Prompt Index";
+  titleText.style.margin = "0 auto 0 0";
+
+  const themeToggle = document.createElement("button");
+  themeToggle.className = "theme-toggle";
+  themeToggle.innerHTML = `<svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`;
+  titleBar.appendChild(titleText);
+  titleBar.appendChild(themeToggle);
+
+  const chatTitle = document.createElement("div");
+  chatTitle.id = "chat-title";
+  chatTitle.textContent = `'${getChatTitle()}'`;
+
+  const promptList = document.createElement("ul");
+  promptList.id = "prompt-list";
+  promptList.style.marginTop = "14px";
+
+  panel.appendChild(document.createElement("div")).id = "resizer";
+  panel.appendChild(titleBar);
+  panel.appendChild(chatTitle);
+  panel.appendChild(promptList);
+
   let windowWidth = MIN_PANEL_WIDTH;
   document.body.appendChild(panel);
 
   const toggleButton = document.createElement("button");
   toggleButton.id = "my-chatgpt-toggle-btn";
-  toggleButton.innerText = "☰";
+  toggleButton.innerHTML = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>`;
   toggleButton.setAttribute("aria-label", "Toggle Prompt Panel");
   toggleButton.setAttribute("tabindex", "0");
   document.body.appendChild(toggleButton);
 
   let panelVisible = false;
-  const hidePanel = () => { panelVisible = false; panel.style.right = `-${windowWidth}px`; };
-  const showPanel = () => { panelVisible = true; panel.style.right = `0px`; };
+  const hamburgerIcon = `<svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>`;
+  const closeIcon = `<svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+
+  const hidePanel = () => {
+    panelVisible = false;
+    panel.style.right = `-${windowWidth}px`;
+    toggleButton.innerHTML = hamburgerIcon;
+  };
+  const showPanel = () => {
+    panelVisible = true;
+    panel.style.right = `0px`;
+    toggleButton.innerHTML = closeIcon;
+  };
 
   toggleButton.onclick = (event) => { event.stopPropagation(); panelVisible ? hidePanel() : showPanel(); };
   document.addEventListener("click", (event) => {
     if (panelVisible && !panel.contains(event.target) && !toggleButton.contains(event.target)) hidePanel();
   });
+
+  // Dark/Light Mode Sync and Toggle
+  const setTheme = (mode) => {
+    const root = document.querySelector('#my-chatgpt-panel');
+    const listItems = document.querySelectorAll('#prompt-list li');
+    if (!root) return;
+    if (mode === 'dark') {
+      root.style.backgroundColor = '#202123';
+      root.style.color = '#ececf1';
+      listItems.forEach(li => {
+        li.style.backgroundColor = '#343541';
+        li.onmouseenter = () => li.style.backgroundColor = '#3e4047';
+        li.onmouseleave = () => li.style.backgroundColor = '#343541';
+      });
+    } else {
+      root.style.backgroundColor = '#f7f7f8';
+      root.style.color = '#111';
+      listItems.forEach(li => {
+        li.style.backgroundColor = '#ffffff';
+        li.onmouseenter = () => li.style.backgroundColor = '#f0f0f0';
+        li.onmouseleave = () => li.style.backgroundColor = '#ffffff';
+      });
+    }
+  };
+
+  const detectTheme = () => document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  let currentTheme = detectTheme();
+  setTheme(currentTheme);
+  themeToggle.onclick = () => {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    setTheme(currentTheme);
+  };
 
   const resizer = panel.querySelector("#resizer");
   let isResizing = false;
@@ -55,7 +173,8 @@
   });
   document.addEventListener("mouseup", () => { isResizing = false; document.body.style.cursor = ""; });
 
-  const promptList = document.getElementById("prompt-list");
+
+  // const promptList = document.getElementById("prompt-list");
   const getChatId = () => location.pathname.split("/").pop() || `chat-${Date.now()}`;
 
   let addedPrompts = new Set();
@@ -189,7 +308,13 @@
   const chatListContainer = document.querySelector("nav");
   if (chatListContainer) {
     chatListContainer.addEventListener("click", () => {
-      setTimeout(scanAndRenderPrompts, CHAT_SCAN_DELAY);
+      setTimeout(() => {
+        const chatTitleDiv = document.getElementById("chat-title");
+        if (chatTitleDiv) {
+          chatTitleDiv.textContent = `“${getChatTitle()}”`;
+        }
+        scanAndRenderPrompts();
+      }, CHAT_SCAN_DELAY);
     });
   }
 
